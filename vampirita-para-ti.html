@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Para ti, mi amor 💗</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0c0210;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;font-family:system-ui,'Segoe UI',sans-serif;color:#e8f6ff}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#title{position:fixed;top:max(16px,env(safe-area-inset-top));left:0;right:0;text-align:center;pointer-events:none;opacity:0;transition:opacity 2.4s;
+ font:italic 700 clamp(1.8rem,min(10vw,9vh),3.8rem) 'Segoe Script','Brush Script MT','Snell Roundhand',cursive;color:#ffd6ee;text-shadow:0 0 10px #ff3fa6,0 0 30px #c4157a}
+#title small{display:block;margin-top:2px;font:600 .75rem system-ui,sans-serif;letter-spacing:.3em;color:#ff9ad5;text-shadow:none}
+.panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));transition:opacity .6s}
+#msg{background:rgba(18,0,12,.6);backdrop-filter:blur(4px)}
+.hide{opacity:0;pointer-events:none}
+.card{width:min(350px,100%);max-height:100%;overflow-y:auto;padding:28px 24px;text-align:center;border-radius:22px;background:linear-gradient(160deg,rgba(62,8,40,.95),rgba(22,1,14,.97));border:1px solid rgba(255,110,190,.4);box-shadow:0 0 44px rgba(255,40,160,.35),inset 0 0 30px rgba(255,40,160,.12)}
+.em{font-size:3.4rem;line-height:1.1;filter:drop-shadow(0 0 14px #ff3fa6)}
+.card h2{font:700 1.5rem Georgia,'Times New Roman',serif;margin:10px 0 10px;color:#fff}
+.card p{font-size:.95rem;line-height:1.6;color:#f0cfe3}
+.card .date{margin-top:14px;font-size:.75rem;letter-spacing:.25em;color:#ff9ad5}
+button{margin-top:20px;min-height:44px;touch-action:manipulation;padding:12px 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#d6157f,#ff5fb8);color:#fff;font:700 .95rem system-ui,sans-serif;cursor:pointer;box-shadow:0 0 18px rgba(255,80,180,.5)}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#hint{position:fixed;bottom:max(14px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:.8rem;color:#ff9ad5;opacity:0;transition:opacity 1.5s;pointer-events:none}
+@media (max-width:420px){.card{padding:22px 18px}.card p{font-size:.92rem}.em{font-size:3rem}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title">Te amo<small>PARA TI, MI AMOR</small></div>
+<div id="hint">Toca los íconos que giran · arrastra para dar vueltas</div>
+
+<div class="panel" id="intro">
+  <div class="card">
+    <div class="em">🦇</div>
+    <h2>Para ti, mi amor</h2>
+    <p>Hice una galaxia,porque ser mi mundo te queda corto.</p>
+    <div class="date"></div>
+    <button id="go">Ábrelo, es para ti 💗</button>
+  </div>
+</div>
+
+<div class="panel hide" id="msg">
+  <div class="card">
+    <div class="em" id="mE"></div>
+    <h2 id="mT"></h2>
+    <p id="mX"></p>
+    <button id="back">Volver</button>
+  </div>
+</div>
+
+<script>
+// ✏️ Aquí puedes editar los mensajes de las tarjetas
+const M=[
+ {e:'💗',t:'Perdóname',x:'Hoy me quedé callado y eso te hizo pensar que te iba a criticar. No fue mi intención y lo siento de corazón. Siempre te voy a apoyar en lo que tú quieras y decidas. Siempre vas a ser lo más importante para mí y siempre serás mi prioridad. Te amo mucho con todo mi corazón, y siempre serás mi vampirita.'},
+ {e:'🎀',t:'Eres hermosa',x:'Eres la persona más hermosa que conozco, amor. Tu sonrisa me alegra cualquier día y tu forma de ser me enamora más cada vez.'},
+ {e:'🌹',t:'Mi lugar favorito',x:'Tu mirada, tu voz, tu risa... todo en ti es hermoso. Eres mi lugar favorito en el mundo, corazón.'},
+ {e:'✨',t:'Brillas tanto',x:'Brillas con luz propia, bebé. Cuando llegas, todo se ilumina. Eres preciosa por dentro y por fuera.'},
+ {e:'💖',t:'Lo que más me importa',x:'Eres lo que más me importa en esta vida. Tu felicidad, tus sueños y tu paz son lo primero para mí. Gracias por estar conmigo, mi amor.'},
+ {e:'💌',t:'Estoy contigo',x:'Pase lo que pase, voy a estar a tu lado. Eres hermosa, eres valiosa y te quiero mucho, mi vida.'}
+];
+const T=['TE AMO, CORAZÓN','PERDÓNAME, AMOR','ERES MI PRIORIDAD','BRILLAS TANTO, BEBÉ','SIEMPRE TE APOYO','ERES LO MÁS HERMOSO','PARA TI, MI VAMPIRITA','HAZ LO QUE TÚ QUIERAS','CONTIGO TODO ES MEJOR'];
+
+const $=id=>document.getElementById(id),R=Math.random,TAU=Math.PI*2,clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const C=$('c'),g=C.getContext('2d');
+let W,H,D,sc,cx,cy,pitch=.42,cp=Math.cos(.42),sp=Math.sin(.42);const LOW=Math.min(innerWidth,innerHeight)<600;
+function rs(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;C.width=W*D;C.height=H*D;g.setTransform(D,0,0,D,0,0);sc=Math.min(W/650,H/900);cx=W/2;cy=H*.66;pitch=H>W*1.1?.62:.42;cp=Math.cos(pitch);sp=Math.sin(pitch)}
+addEventListener('resize',rs);rs();
+
+// Datos
+const disk=[];for(let i=0;i<(LOW?1500:2200);i++){const r=40+Math.pow(R(),.7)*520;disk.push({r,a:(i%3)*TAU/3+r*.011+(R()-.5)*.7*(1+r/400),y:(R()-.5)*14*(1+r/200),s:R()*1.4+.5,al:.35+R()*.6,c:`hsl(${315+R()*30} 100% ${55+R()*35}%)`})}
+const heart=[];for(let i=0;i<(LOW?600:800);i++){const t=R()*TAU,k=R()<.7?1-R()*.12:R()*.9,s=Math.sin(t);heart.push({x:16*s*s*s*k,y:-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*k,s:R()*1.6+.7,p:R()*TAU,c:i%3?'#ffa6d9':'#ffffff'})}
+const fount=[];for(let i=0;i<90;i++)fount.push({u:R(),v:.12+R()*.2,p:R()*TAU});
+const stars=[];for(let i=0;i<280;i++)stars.push({x:(R()-.5)*2,y:(R()-.5)*2,z:R()});
+const items=[];
+M.forEach((m,i)=>items.push({k:'b',m,a:i*TAU/M.length,r:265,sp:.14,sx:0,sy:0,rad:0}));
+T.forEach((s,i)=>items.push({k:'t',s,a:i*TAU/T.length+.2,r:430,sp:-.06}));
+for(let i=0;i<16;i++)items.push({k:'g',a:R()*TAU,r:190+R()*170,sp:.2,y:15+R()*35,i});
+const bats=[];for(let i=0;i<5;i++)bats.push({x:R()*W,y:H*(.08+R()*.5),v:25+R()*35,s:10+R()*12,p:R()*TAU});
+
+// Cámara
+let yaw=0,drag=0;
+function P(x,y,z){const c=Math.cos(yaw+drag),s=Math.sin(yaw+drag),X=x*c-z*s,Z=x*s+z*c,d=1100+Z*cp-y*sp,k=900/d*sc;return{x:cx+X*k,y:cy-(y*cp+Z*sp)*k,k,d}}
+
+function bat(x,y,s,f){g.save();g.translate(x,y);g.beginPath();g.moveTo(0,0);
+ g.quadraticCurveTo(-s*.5,-s*.6*f,-s,-s*.15);g.quadraticCurveTo(-s*.7,-s*.05,-s*.55,s*.2);g.quadraticCurveTo(-s*.3,0,0,s*.25);
+ g.quadraticCurveTo(s*.3,0,s*.55,s*.2);g.quadraticCurveTo(s*.7,-s*.05,s,-s*.15);g.quadraticCurveTo(s*.5,-s*.6*f,0,0);
+ g.fillStyle='#0a0108';g.strokeStyle='rgba(255,130,200,.75)';g.lineWidth=1.2;g.shadowColor='#ff3fa6';g.shadowBlur=8;g.fill();g.stroke();g.restore()}
+
+// Estado
+let last=performance.now(),t=0,go=false,tg=0,sceneA=0,titled=false,paused=false;
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;t+=dt;yaw+=dt*.08;
+ const tt=go?t-tg:0,warpA=go?clamp(1-(tt-.8)/1.6):1;sceneA=go?clamp((tt-.8)/1.8):0;
+ const rt=go?clamp((tt-1)/3.5):0,rise=1-Math.pow(1-rt,3);
+ if(rt>.5&&!titled){titled=true;$('title').style.opacity=1}
+ g.globalCompositeOperation='source-over';g.globalAlpha=1;g.shadowBlur=0;
+ const bg=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);bg.addColorStop(0,'#3a0524');bg.addColorStop(1,'#0c0210');
+ g.fillStyle=bg;g.fillRect(0,0,W,H);
+
+ // Estrellas / líneas de velocidad (Sonic)
+ if(warpA>0){const spd=.15+(go?2.5*clamp(tt/.8):0);g.lineCap='round';
+  for(const s of stars){const pz=s.z+dt*spd;s.z-=dt*spd;if(s.z<=.03){s.z=1;s.x=(R()-.5)*2;s.y=(R()-.5)*2;continue}
+   const q=Math.min(W,H)*.45,x1=cx+s.x/s.z*q*.5,y1=cy+s.y/s.z*q*.5,x0=cx+s.x/pz*q*.5,y0=cy+s.y/pz*q*.5;
+   g.strokeStyle=`rgba(255,170,220,${(1-s.z)*warpA})`;g.lineWidth=.8+(1-s.z)*2;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()}}
+
+ if(sceneA>0){
+  g.globalAlpha=sceneA;
+  // Disco galáctico
+  g.globalCompositeOperation='lighter';
+  for(const p of disk){p.a+=dt*18/p.r;const q=P(p.r*Math.cos(p.a),p.y,p.r*Math.sin(p.a));g.globalAlpha=sceneA*p.al;g.fillStyle=p.c;const z=p.s*q.k*1.5+.5;g.fillRect(q.x,q.y,z,z)}
+  g.globalCompositeOperation='source-over';g.globalAlpha=sceneA;
+  // Agujero negro
+  const o=P(0,0,0);g.save();g.translate(o.x,o.y);g.scale(1,sp);
+  let gr=g.createRadialGradient(0,0,10*o.k,0,0,150*o.k);gr.addColorStop(0,'#000');gr.addColorStop(.38,'#000');gr.addColorStop(.46,'rgba(255,110,200,.95)');gr.addColorStop(.65,'rgba(220,30,140,.35)');gr.addColorStop(1,'rgba(160,0,100,0)');
+  g.fillStyle=gr;g.beginPath();g.arc(0,0,150*o.k,0,TAU);g.fill();g.restore();
+
+  const k0=.818*sc,hy=(25+Math.min(H*.3,300)*rise)/(cp*k0),hc=P(0,hy,0),hs=Math.min(W*.27/16,H*.0072,6.2)*(.6+.4*rise),pul=1+.04*Math.sin(t*3);
+  g.globalCompositeOperation='lighter';
+  // Fuente de partículas hacia el corazón
+  for(const f of fount){f.u=(f.u+dt*f.v)%1;const q=P(Math.sin(f.p+f.u*9)*18*(1-f.u),f.u*hy,Math.cos(f.p+f.u*9)*18*(1-f.u));
+   g.globalAlpha=sceneA*rise*(1-f.u*.5);g.fillStyle='#ff9ad5';g.fillRect(q.x,q.y,2.2*q.k+1,2.2*q.k+1)}
+  // Corazón
+  let hg=g.createRadialGradient(hc.x,hc.y,0,hc.x,hc.y,hs*20);hg.addColorStop(0,'rgba(255,60,160,.35)');hg.addColorStop(1,'rgba(200,0,120,0)');
+  g.globalAlpha=sceneA*rise;g.fillStyle=hg;g.fillRect(hc.x-hs*20,hc.y-hs*20,hs*40,hs*40);
+  for(const h of heart){const j=Math.sin(t*2+h.p)*1.5,z=h.s*(.8+.5*Math.sin(t*3+h.p));g.globalAlpha=sceneA*rise*.9;g.fillStyle=h.c;g.fillRect(hc.x+h.x*hs*pul+j,hc.y+h.y*hs*pul+j,z,z)}
+  g.globalCompositeOperation='source-over';
+
+  // Objetos que giran (ordenados por profundidad)
+  const L=[];for(const it of items){const a=it.a+t*it.sp;let q;
+   if(it.k==='g')q=P(it.r*Math.cos(a),it.y+Math.sin(t*1.5+it.i)*10,it.r*Math.sin(a));
+   else q=P(it.r*Math.cos(a),it.k==='b'?35+Math.sin(t+it.a*3)*12:22,it.r*Math.sin(a));
+   it.q=q;L.push(it)}
+  L.sort((a,b)=>b.q.d-a.q.d);
+  g.textAlign='center';g.textBaseline='middle';
+  for(const it of L){const q=it.q,depth=clamp(.6-(q.d-1100)/1100,.2,1);
+   if(it.k==='g'){g.globalAlpha=sceneA*depth;g.strokeStyle='#ffd23a';g.shadowColor='#ffb800';g.shadowBlur=10;g.lineWidth=Math.max(1.6,3.2*q.k);
+    g.beginPath();g.ellipse(q.x,q.y,Math.abs(Math.cos(t*2.5+it.i))*9*q.k+1,11*q.k,0,0,TAU);g.stroke();g.shadowBlur=0}
+   else if(it.k==='t'){g.globalAlpha=sceneA*depth*.9;g.font=`700 ${Math.max(W<520?13:10,17*q.k)}px Georgia,serif`;g.fillStyle='#ffc2e6';g.shadowColor='#ff3fa6';g.shadowBlur=10;g.fillText(it.s,q.x,q.y);g.shadowBlur=0}
+   else{const rad=Math.max(26,40*q.k);it.sx=q.x;it.sy=q.y;it.rad=rad;g.globalAlpha=sceneA*(.5+depth*.5);
+    const bgd=g.createRadialGradient(q.x,q.y,rad*.2,q.x,q.y,rad);bgd.addColorStop(0,'rgba(220,40,140,.75)');bgd.addColorStop(1,'rgba(100,6,60,.55)');
+    g.fillStyle=bgd;g.strokeStyle='#ff7cc8';g.lineWidth=2;g.shadowColor='#ff3fa6';g.shadowBlur=16;g.beginPath();g.arc(q.x,q.y,rad,0,TAU);g.fill();g.stroke();g.shadowBlur=0;
+    g.font=`${rad*1.05}px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif`;g.fillStyle='#fff';g.fillText(it.m.e,q.x,q.y+rad*.06)}}
+  g.globalAlpha=1;
+  // Murciélagos
+  for(const b of bats){b.x+=b.v*dt;if(b.x>W+40){b.x=-40;b.y=H*(.08+R()*.5)}
+   g.globalAlpha=sceneA;bat(b.x,b.y+Math.sin(t*1.3+b.p)*14,b.s*Math.max(.7,sc+.3),.55+.45*Math.sin(t*9+b.p))}
+  g.globalAlpha=1;g.shadowBlur=0}
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+// Interacción
+let down=false,moved=0,lx=0;
+const hit=(x,y)=>{let best=null,bd=1e9;for(const it of items){if(it.k!=='b'||!it.rad)continue;const d=Math.hypot(x-it.sx,y-it.sy);if(d<it.rad*1.25&&d<bd){bd=d;best=it}}return best};
+C.addEventListener('pointerdown',e=>{down=true;moved=0;lx=e.clientX});
+addEventListener('pointermove',e=>{if(down){const dx=e.clientX-lx;lx=e.clientX;moved+=Math.abs(dx);drag+=dx*.006}else if(sceneA>.9)C.style.cursor=hit(e.clientX,e.clientY)?'pointer':'default'});
+addEventListener('pointerup',e=>{if(down&&moved<8&&sceneA>.9){const b=hit(e.clientX,e.clientY);if(b){$('mE').textContent=b.m.e;$('mT').textContent=b.m.t;$('mX').textContent=b.m.x;$('msg').classList.remove('hide');$('back').focus()}}down=false});
+$('back').onclick=()=>$('msg').classList.add('hide');
+addEventListener('keydown',e=>{if(e.key==='Escape')$('msg').classList.add('hide')});
+$('go').onclick=()=>{go=true;tg=t;$('intro').classList.add('hide');setTimeout(()=>$('hint').style.opacity=1,5000);setTimeout(()=>$('hint').style.opacity=0,12000)};
+</script>
+</body>
+</html>
